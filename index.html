@@ -372,6 +372,8 @@
     </head>
     <body>
         <h1>Welcome to nostr image host</h1>
+        <p>On this page you can upload images to nostr relays. It works by dividing up the image into small chunks, uploading each chunk as a note, and then reassembling them piece by piece. I've had no issues uploading images smaller than 20kb to wss://relay.damus.io and wss://nostrue.com.</p>
+        <p>Some nostr relays have stringent rate limits and probably won't work for this. Try small images (fewer chunks) to avoid hitting the rate limit. If you *do* hit the rate limit before your image is done uploading, you won't see an error message or anything helpful, your image just won't load when you try to view it, because one or more chunks are missing. Try again with a smaller image and maybe a different relay. A list of nostr relays is <a href="https://nostr.watch/" target="_blank">here</a>.</p>
         <h2>Upload an image</h2>
         <div class="view_form">
             <p>Enter nostr relay</p>
