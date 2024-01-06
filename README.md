@@ -1,1 +1,1 @@
-# nostr-image-host
+# Nostr image host
