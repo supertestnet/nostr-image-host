@@ -4,8 +4,11 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, user-scalable=no">
         <script src="https://bitcoincore.tech/apps/bitcoinjs-ui/lib/bitcoinjs-lib.js"></script>
-        <script src="https://bundle.run/noble-secp256k1@1.2.14"></script>
+        <!-- <script src="https://supertestnet.github.io/nostr-image-host/nostr_image_host.js"></script> -->
+        <script src="file:///home/supertestnet/nostr_image_host/nostr_image_host.js"></script>
+        <script src="https://cdn.jsdelivr.net/gh/6502/sha256@main/sha256.js"></script>
         <script src="https://bundle.run/browserify-cipher@1.0.1"></script>
+        <script src="https://bundle.run/noble-secp256k1@1.2.14"></script>
         <style>
             * {
                 box-sizing: border-box;
@@ -87,15 +90,6 @@
             for ( var key of url_keys ) $_GET[ key ] = url_params.get( key );
         </script>
         <script>
-            var { getSharedSecret, schnorr, utils } = nobleSecp256k1;
-            var crypto  = window.crypto;
-            var sha256  = bitcoinjs.crypto.sha256;
-            var keypair = bitcoinjs.ECPair.makeRandom();
-            var privKey = keypair.privateKey.toString( "hex" );
-            var pubKey  = keypair.publicKey.toString( "hex" );
-            pubKey      = pubKey.substring( 2 );
-            console.log( pubKey );
-            var whole_id;
             var upload_data = [];
             var handleWhole = ( whole, image_id ) => {
                 if ( $( '#your_image' ) ) {
@@ -119,8 +113,9 @@
                     var embed_inst = document.createElement( "p" );
                     embed_inst.innerHTML = `&lt;img class="nostr_image_host nostr_image_${image_id}"&gt;
         &lt;script src="https://supertestnet.github.io/nostr-image-host/nostr_image_host.js"&gt;&lt;/script&gt;
-        &lt;script src="https://bundle.run/noble-secp256k1@1.2.14"&gt;&lt;/script&gt;
+        &lt;script src="https://cdn.jsdelivr.net/gh/6502/sha256@main/sha256.js"&gt;&lt;/script&gt;
         &lt;script src="https://bundle.run/browserify-cipher@1.0.1"&gt;&lt;/script&gt;
+        &lt;script src="https://bundle.run/noble-secp256k1@1.2.14"&gt;&lt;/script&gt;
         &lt;script&gt;var nostr_image_loader_${image_id} = async () =&gt; {var b64 = await nostr_image_host.getImageFromImageId( "${image_id}" );document.getElementsByClassName( "nostr_image_${image_id}" )[ 0 ].src = b64;}; nostr_image_loader_${image_id}();&lt;/script&gt;`;
                     embed_inst.className = "embed_inst";
                     document.body.append( header );
@@ -128,191 +123,6 @@
                     document.body.append( embed_label );
                     document.body.append( embed_inst );
                 }
-            }
-            var load_file = ( file_id, relay ) => {
-                return new Promise( function( resolve, reject ) {
-                    var pieces = [];
-                    var socket = new WebSocket( relay );
-                    socket.addEventListener('message', async function( message ) {
-                        var [ type, subId, event ] = JSON.parse( message.data );
-                        var { kind, content, tags } = event || {}
-                        if (!event || event === true) return;
-                        if ( subId.startsWith( "0000" ) ) {
-                            tags.forEach( async item => {
-                                if ( item[ 0 ] == "pieces" ) {
-                                    var parts = item[ 1 ].split( " of " );
-                                    pieces[ Number( parts[ 0 ] ) - 1 ] = content;
-                                    if ( parts[ 0 ] == "1" ) {
-                                        whole_id = event.id;
-                                        if ( pieces.length == Number( parts[ 1 ] ) ) {
-                                            var whole = pieces.join( "" );
-                                            var html = `
-                                                <div class="progress">
-                                                    <h2>Progress bar <span id="goal" style="font-size: .8em; font-weight: normal;"></span></h2>
-                                                    <div class="progressOutline" style="height: 2em; border: 1px solid grey; border-radius: 25px; overflow: hidden;">
-                                                        <div class="progressBar" style="height: 2em; background-color: #61eb34; width: 0%; transition: width 1s;">
-                                                        </div>
-                                                    </div>
-                                                    <div class="progress_status"></div>
-                                                </div>
-                                            `;
-                                            showModal( html );
-                                            if ( $( '.progressBar' ) ) $( '.progressBar' ).style.width = `100%`;
-                                            handleWhole( whole, file_id + textToHex( relay ) );
-                                            sessionStorage[ `nostr_image_${whole_id}` ] = whole;
-                                            console.log( "closing socket" );
-                                            socket.close();
-                                            await waitSomeSeconds( 1 );
-                                            location.hash = "#your_image";
-                                            modalVanish();
-                                            resolve( whole_id );
-                                        }
-                                    } else {
-                                        var num_of_loaded_parts = 0;
-                                        pieces.forEach( item => {if ( item ) num_of_loaded_parts = num_of_loaded_parts + 1;} );
-                                        var percent = ( ( num_of_loaded_parts / Number( parts[ 1 ] ) ) * 100 ).toFixed( 2 );
-                                        var html = `
-                                            <div class="progress">
-                                                <h2>Progress bar <span id="goal" style="font-size: .8em; font-weight: normal;"></span></h2>
-                                                <div class="progressOutline" style="height: 2em; border: 1px solid grey; border-radius: 25px; overflow: hidden;">
-                                                    <div class="progressBar" style="height: 2em; background-color: #61eb34; width: 0%; transition: width 1s;">
-                                                    </div>
-                                                </div>
-                                                <div class="progress_status"></div>
-                                            </div>
-                                        `;
-                                        showModal( html );
-                                        $( '.progressBar' ).style.width = `${percent}%`;
-                                    }
-                                }
-                            });
-                        } else {
-                            var subId   = "0000" + bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ).substring( 4, 16 );
-                            var filter  = { "authors": [ event.pubkey ], kinds: [ 57009 ] }
-                            var subscription = [ "REQ", subId, filter ];
-                            socket.send(JSON.stringify( subscription ));
-                        }
-                    });
-                    socket.addEventListener('open', async function( e ) {
-                        console.log( "connected to " + relay );
-                        var subId   = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ).substring( 0, 16 );
-                        var filter  = { "ids": [ file_id ], kinds: [ 57009 ] }
-                        var subscription = [ "REQ", subId, filter ];
-                        socket.send(JSON.stringify( subscription ));
-                    });
-                });
-            }
-            async function getSignedEvent(event, privateKey) {
-                var eventData = JSON.stringify([
-                    0,                  // Reserved for future use
-                    event['pubkey'],        // The sender's public key
-                    event['created_at'],    // Unix timestamp
-                    event['kind'],      // Message “kind” or type
-                    event['tags'],      // Tags identify replies/recipients
-                    event['content']        // Your note contents
-                ])
-                event.id  = sha256( eventData ).toString( 'hex' );
-                event.sig = await schnorr.sign( event.id, privateKey );
-                return event;
-            }
-            function hexToBytes( hex ) {
-                return Uint8Array.from( hex.match( /.{1,2}/g ).map( ( byte ) => parseInt( byte, 16 ) ) );
-            }
-
-            function bytesToHex( bytes ) {
-                return bytes.reduce( ( str, byte ) => str + byte.toString( 16 ).padStart( 2, '0' ), '' );
-            }
-            function base64ToHex( str ) {
-                var raw = atob( str );
-                var result = '';
-                var i; for ( i=0; i<raw.length; i++ ) {
-                    var hex = raw.charCodeAt( i ).toString( 16 );
-                    result += ( hex.length === 2 ? hex : '0' + hex );
-                }
-                return result;
-            }
-            var sendNoteAndReturnId = async ( note, part, whole, socket ) => {
-                var event = {
-                    "content"    : note,
-                    "created_at" : Math.floor( Date.now() / 1000 ),
-                    "kind"       : 57009,
-                    "tags"       : [ [ "pieces", `${part} of ${whole}` ] ],
-                    "pubkey"     : pubKey,
-                }
-                var signedEvent = await getSignedEvent(event, privKey);
-                socket.send(JSON.stringify([ "EVENT", signedEvent ]));
-                return signedEvent.id;
-            }
-            function encodeBase64( file ) {
-                return new Promise( function( resolve, reject ) {
-                    //the next three lines handle the case where an image is passed in from an external site
-                    if ( "files" in file ) {
-                        file = file.files[ 0 ];
-                    }
-                    var imgReader = new FileReader();
-                    imgReader.onloadend = function() {
-                        resolve( imgReader.result.toString() );
-                    }
-                    imgReader.readAsDataURL( file );
-                });
-            }
-
-            var getB64ImageFromUrl = url => {
-                return new Promise( function( resolve, reject ) {
-                    var xhr = new XMLHttpRequest();
-                    xhr.onload = async () => {
-                        var b64 = await encodeBase64( xhr.response );
-                        resolve( b64 );
-                    }
-                    xhr.open( 'GET', url );
-                    xhr.responseType = 'blob';
-                    xhr.send();
-                });
-            }
-
-            var fromUploadToNostr = async ( form, relay ) => {
-                if ( !relay ) return;
-                if ( !relay.startsWith( "wss://" ) ) relay = "wss://" + relay;
-                var b64 = await encodeBase64( form );
-                var socket = new WebSocket( relay );
-                socket.addEventListener('open', async function( e ) {
-                    console.log( "connected to " + relay );
-                    var array = splitB64( b64 );
-                    var i; for ( i=0; i<array.length; i++ ) {
-                        var note = array[ i ];
-                        var part = i + 1;
-                        var whole = array.length;
-                        var id = await sendNoteAndReturnId( note, part, whole, socket );
-                        var percent = ( ( part / whole ) * 100 ).toFixed( 2 );
-                        var html = `
-                            <div class="progress">
-                                <h2>Progress bar <span id="goal" style="font-size: .8em; font-weight: normal;"></span></h2>
-                                <div class="progressOutline" style="height: 2em; border: 1px solid grey; border-radius: 25px; overflow: hidden;">
-                                    <div class="progressBar" style="height: 2em; background-color: #61eb34; width: 0%; transition: width 1s;">
-                                    </div>
-                                </div>
-                                <div class="progress_status"></div>
-                            </div>
-                        `;
-                        if ( percent == 100 ) html = html + `<h2>Your image id</h2><p>${id + textToHex( relay )}</p>`;
-                        showModal( html );
-                        $( '.progressBar' ).style.width = `${percent}%`;
-                        await waitSomeSeconds( 2 );
-                    }
-                    console.log( "closing socket" );
-                    socket.close();
-                });
-
-            }
-
-            var splitB64 = b64 => {
-                var splits = b64.match(/.{1,4000}/g);
-                return splits;
-            }
-            var waitSomeSeconds = num => {
-                var num = num.toString() + "000";
-                num = Number( num );
-                return new Promise( resolve => setTimeout( resolve, num ) );
             }
             function modalVanish() {
                 $( ".black-bg" ).classList.add( "hidden" );
@@ -323,50 +133,6 @@
                 $( ".modal" ).innerHTML += `<div style="overflow-y: auto; max-height: 80vh; margin-top: 1.5rem;">${content}</div>`;
                 $( ".black-bg" ).classList.remove( "hidden" );
                 $( ".modal" ).classList.remove( "hidden" );
-            }
-            function textToHex( text ) {
-                var encoder = new TextEncoder().encode( text );
-                return [...new Uint8Array(encoder)]
-                    .map( x => x.toString( 16 ).padStart( 2, "0" ) )
-                    .join( "" );
-            }
-            function hexToText( hex ) {
-                var bytes = new Uint8Array(Math.ceil(hex.length / 2));
-                for (var i = 0; i < hex.length; i++) bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
-                var text = new TextDecoder().decode( bytes );
-                return text;
-            }
-            Object.keys( sessionStorage ).forEach( item => {
-                if ( item.startsWith( "nostr_image_" ) ) sessionStorage.removeItem( item );
-            });
-            async function getNote( item ) {
-                async function isNoteSetYet( note_i_seek ) {
-                    return new Promise( function( resolve, reject ) {
-                        if ( !note_i_seek ) {
-                            setTimeout( async function() {
-                                var msg = await isNoteSetYet( sessionStorage[ item ] );
-                                resolve( msg );
-                            }, 100 );
-                        } else {
-                            resolve( note_i_seek );
-                        }
-                    });
-                }
-                async function getTimeoutData() {
-                    var note_i_seek = await isNoteSetYet( sessionStorage[ item ] );
-                    return note_i_seek;
-                }
-                var returnable = await getTimeoutData();
-                return returnable;
-            }
-            var getImageFromImageId = async image_id => {
-                var relay_hex = image_id.substring( 64 );
-                var relay = hexToText( relay_hex );
-                var file_id = image_id.substring( 0, 64 );
-                var thing_i_need = await load_file( file_id, relay );
-                var image_b64 = await getNote( `nostr_image_${thing_i_need}` );
-                sessionStorage.removeItem( `nostr_image_${thing_i_need}` );
-                return image_b64;
             }
         </script>
     </head>
@@ -379,7 +145,7 @@
             <p>Enter nostr relay</p>
             <p><input class="upload_relay"></p>
             <form>
-                <p><input class="upload_form" type="file" onchange="if ( this.files[ 0 ].size < 266240 ) {upload_data.push( this );} else {alert( 'File too large, make sure it is less than 260 kilobytes' ); this.value = null;}" /></p>
+                <p><input class="upload_form" type="file" onchange="if ( this.files[ 0 ].size < 266240 ) {upload_data.push( this.files[ 0 ] );} else {alert( 'File too large, make sure it is less than 260 kilobytes' ); this.value = null;}" /></p>
             </form>
             <p><button class="submit_upload_form">Submit</button></p>
         </div>
@@ -390,8 +156,7 @@
             <p><button class="submit_view_form">Submit</button></p>
         </div>
         <script>
-            $( '.upload_form' ).value = "";
-            $( '.submit_upload_form' ).onclick = () => {
+            var do_upload_bar = async image_id => {
                 var html = `
                     <div class="progress">
                         <h2>Progress bar <span id="goal" style="font-size: .8em; font-weight: normal;"></span></h2>
@@ -402,10 +167,14 @@
                         <div class="progress_status"></div>
                     </div>
                 `;
+                if ( nostr_image_host.percent_done_uploading == "100%" ) html = html + `<h2>Your image id</h2><p>${image_id}</p>`;
                 showModal( html );
-                fromUploadToNostr( upload_data[ 0 ], $( '.upload_relay' ).value );
+                var percent = nostr_image_host.percent_done_uploading;
+                $( '.progressBar' ).style.width = percent;
+                await nostr_image_host.waitSomeSeconds( 2 );
+                if ( nostr_image_host.percent_done_uploading != "100%" ) do_upload_bar();
             }
-            $( '.submit_view_form' ).onclick = () => {
+            var do_download_bar = async () => {
                 var html = `
                     <div class="progress">
                         <h2>Progress bar <span id="goal" style="font-size: .8em; font-weight: normal;"></span></h2>
@@ -417,11 +186,29 @@
                     </div>
                 `;
                 showModal( html );
+                await nostr_image_host.waitSomeSeconds( 1 );
+                var percent = nostr_image_host.percent_done_downloading;
+                $( '.progressBar' ).style.width = nostr_image_host.percent_done_downloading;
+                await nostr_image_host.waitSomeSeconds( 1 );
+                if ( nostr_image_host.percent_done_downloading != "100%" ) do_download_bar();
+                else {
+                    $( '.progressBar' ).style.width = nostr_image_host.percent_done_downloading;
+                    await nostr_image_host.waitSomeSeconds( 2 );
+                    modalVanish();
+                }
+            }
+            $( '.upload_form' ).value = "";
+            $( '.submit_upload_form' ).onclick = async () => {
+                do_upload_bar();
+                var id = await nostr_image_host.uploadToNostr( upload_data[ 0 ], $( '.upload_relay' ).value );
+                do_upload_bar( id );
+            }
+            $( '.submit_view_form' ).onclick = async () => {
+                do_download_bar();
                 var image_id = $( '.image_id' ).value;
-                var relay_hex = image_id.substring( 64 );
-                var relay = hexToText( relay_hex );
-                var file_id = image_id.substring( 0, 64 );
-                load_file( file_id, relay );
+                var b64 = await nostr_image_host.getImageFromImageId( image_id );
+                handleWhole( b64, image_id );
+                location.hash = "#your_image";
             }
         </script>
         <div class="black-bg hidden" onclick="modalVanish();"></div>
