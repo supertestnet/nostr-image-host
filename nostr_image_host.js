@@ -1,10 +1,10 @@
-var nostr_file_host = {
+var nostr_image_host = {
 	getImageFromImageId: async image_id => {
 	    var relay_hex = image_id.substring( 64 );
-	    var relay = nostr_file_host.hexToText( relay_hex );
+	    var relay = nostr_image_host.hexToText( relay_hex );
 	    var file_id = image_id.substring( 0, 64 );
-	    var thing_i_need = await nostr_file_host.load_file( file_id, relay );
-	    var image_b64 = await nostr_file_host.getNote( `nostr_image_${thing_i_need}` );
+	    var thing_i_need = await nostr_image_host.load_file( file_id, relay );
+	    var image_b64 = await nostr_image_host.getNote( `nostr_image_${thing_i_need}` );
 	    sessionStorage.removeItem( `nostr_image_${thing_i_need}` );
 	    return image_b64;
 	},
@@ -59,7 +59,7 @@ var nostr_file_host = {
                                     var whole = pieces.join( "" );
                                     sessionStorage[ `nostr_image_${whole_id}` ] = whole;
                                     socket.close();
-                                    await nostr_file_host.waitSomeSeconds( 1 );
+                                    await nostr_image_host.waitSomeSeconds( 1 );
                                     location.hash = "#your_image";
                                     resolve( whole_id );
                                 }
@@ -67,14 +67,14 @@ var nostr_file_host = {
                         }
                     });
                 } else {
-                    var subId   = "0000" + nostr_file_host.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ).substring( 4, 16 );
+                    var subId   = "0000" + nostr_image_host.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ).substring( 4, 16 );
                     var filter  = { "authors": [ event.pubkey ], kinds: [ 57009 ] }
                     var subscription = [ "REQ", subId, filter ];
                     socket.send(JSON.stringify( subscription ));
                 }
             });
             socket.addEventListener('open', async function( e ) {
-                var subId   = nostr_file_host.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ).substring( 0, 16 );
+                var subId   = nostr_image_host.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ).substring( 0, 16 );
                 var filter  = { "ids": [ file_id ], kinds: [ 57009 ] }
                 var subscription = [ "REQ", subId, filter ];
                 socket.send(JSON.stringify( subscription ));
