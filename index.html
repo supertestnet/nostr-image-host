@@ -67,6 +67,14 @@
             .hidden {
                 display: none;
             }
+            .embed_inst {
+                background-color: #999999;
+                color: white;
+                font-family: monospace;
+                padding: 1rem;
+                word-wrap: break-word;
+                border: 1px solid black;
+            }
             @media screen and (max-width: 600px) {
             }
         </style>
@@ -93,6 +101,8 @@
                 if ( $( '#your_image' ) ) {
                     $( '#your_image' ).remove();
                     $( 'img' ).remove();
+                    $( '.embed_inst_label' ).remove();
+                    $( '.embed_inst' ).remove();
                 }
                 var type = whole.substring( 0, whole.indexOf( "base64" ) );
                 if ( type.startsWith( "data:image" ) ) {
@@ -103,15 +113,15 @@
                     header.id = "your_image";
                     header.className = "your_image";
                     var embed_label = document.createElement( "h2" );
-                    embed_label.innerText = "Embed";
+                    embed_label.innerText = "Embed this image on your page";
                     embed_label.className = "embed_inst_label";
                     var embed_inst = document.createElement( "p" );
                     embed_inst.innerHTML = `&lt;img class="nostr_image_319f781b7611e0375460cdf87ad62546020debd3163e731417f5fd1069029dea"&gt;
-        &lt;script src="file:///home/supertestnet/nostr_image_host/nostr_image_host.js"&gt;&lt;/script&gt;
+        &lt;script src="https://supertestnet.github.io/nostr-image-host/nostr_image_host.js"&gt;&lt;/script&gt;
         &lt;script src="https://bundle.run/noble-secp256k1@1.2.14"&gt;&lt;/script&gt;
         &lt;script src="https://bundle.run/browserify-cipher@1.0.1"&gt;&lt;/script&gt;
         &lt;script&gt;var nostr_image_loader_319f781b7611e0375460cdf87ad62546020debd3163e731417f5fd1069029dea = async () =&gt; {var b64 = await nostr_image_host.getImageFromImageId( "deca4a25fd807d42e64d6710eca1ceda96e9b20fb21b6f49dcce1b01edf33fc47773733a2f2f6e6f73747275652e636f6d" );document.getElementsByClassName( "nostr_image_319f781b7611e0375460cdf87ad62546020debd3163e731417f5fd1069029dea" )[ 0 ].src = b64;}; nostr_image_loader_319f781b7611e0375460cdf87ad62546020debd3163e731417f5fd1069029dea();&lt;/script&gt;`;
-                    embed_inst.className = "embed_instructions";
+                    embed_inst.className = "embed_inst";
                     document.body.append( header );
                     document.body.append( image );
                     document.body.append( embed_label );
