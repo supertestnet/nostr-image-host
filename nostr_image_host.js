@@ -55,15 +55,15 @@ var nostr_image_host = {
                             var parts = item[ 1 ].split( " of " );
                             pieces[ Number( parts[ 0 ] ) - 1 ] = content;
                             if ( parts[ 0 ] == "1" ) {
-                                whole_id = event.id;
+                                nostr_image_host.whole_id = event.id;
                                 if ( pieces.length == Number( parts[ 1 ] ) ) {
                                     var whole = pieces.join( "" );
                                     nostr_image_host.percent_done_downloading = `100%`;
-                                    sessionStorage[ `nostr_image_${whole_id}` ] = whole;
+                                    sessionStorage[ `nostr_image_${nostr_image_host.whole_id}` ] = whole;
                                     socket.close();
                                     await nostr_image_host.waitSomeSeconds( 1 );
                                     location.hash = "#your_image";
-                                    resolve( whole_id );
+                                    resolve( nostr_image_host.whole_id );
                                 }
                             } else {
                                 var num_of_loaded_parts = 0;
