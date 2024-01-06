@@ -121,38 +121,16 @@
                     document.body.append( embed_inst );
                 }
             }
-            function modalVanish() {
-                $( ".black-bg" ).classList.add( "hidden" );
-                $( ".modal" ).classList.add( "hidden" );
-            }
             function showModal( content ) {
                 $( ".modal" ).innerHTML = `<div style="position: absolute;right: 1rem;top: 0.5rem;font-size: 2rem; cursor: pointer; color: black;" onclick="modalVanish()">&times;</div>`;
                 $( ".modal" ).innerHTML += `<div style="overflow-y: auto; max-height: 80vh; margin-top: 1.5rem;">${content}</div>`;
                 $( ".black-bg" ).classList.remove( "hidden" );
                 $( ".modal" ).classList.remove( "hidden" );
             }
-        </script>
-    </head>
-    <body>
-        <h1>Welcome to nostr image host</h1>
-        <p>On this page you can upload images to nostr relays. It works by dividing up the image into small chunks, uploading each chunk as a note, and then reassembling them piece by piece. I've had no issues uploading images smaller than 20kb to wss://relay.damus.io and wss://nostrue.com.</p>
-        <p>Some nostr relays have stringent rate limits and probably won't work for this. Try small images (fewer chunks) to avoid hitting the rate limit. If you *do* hit the rate limit before your image is done uploading, you won't see an error message or anything helpful, your image just won't load when you try to view it, because one or more chunks are missing. Try again with a smaller image and maybe a different relay. A list of nostr relays is <a href="https://nostr.watch/" target="_blank">here</a>.</p>
-        <h2>Upload an image</h2>
-        <div class="view_form">
-            <p>Enter nostr relay</p>
-            <p><input class="upload_relay"></p>
-            <form>
-                <p><input class="upload_form" type="file" onchange="if ( this.files[ 0 ].size < 266240 ) {upload_data.push( this.files[ 0 ] );} else {alert( 'File too large, make sure it is less than 260 kilobytes' ); this.value = null;}" /></p>
-            </form>
-            <p><button class="submit_upload_form">Submit</button></p>
-        </div>
-        <h2>View an image</h2>
-        <div class="view_form">
-            <p>Enter image id</p>
-            <p><input class="image_id"></p>
-            <p><button class="submit_view_form">Submit</button></p>
-        </div>
-        <script>
+            function modalVanish() {
+                $( ".black-bg" ).classList.add( "hidden" );
+                $( ".modal" ).classList.add( "hidden" );
+            }
             var do_upload_bar = async image_id => {
                 var html = `
                     <div class="progress">
@@ -194,6 +172,28 @@
                     modalVanish();
                 }
             }
+        </script>
+    </head>
+    <body>
+        <h1>Welcome to nostr image host</h1>
+        <p>On this page you can upload images to nostr relays. It works by dividing up the image into small chunks, uploading each chunk as a note, and then reassembling them piece by piece. I've had no issues uploading images smaller than 20kb to wss://relay.damus.io and wss://nostrue.com.</p>
+        <p>Some nostr relays have stringent rate limits and probably won't work for this. Try small images (fewer chunks) to avoid hitting the rate limit. If you *do* hit the rate limit before your image is done uploading, you won't see an error message or anything helpful, your image just won't load when you try to view it, because one or more chunks are missing. Try again with a smaller image and maybe a different relay. A list of nostr relays is <a href="https://nostr.watch/" target="_blank">here</a>.</p>
+        <h2>Upload an image</h2>
+        <div class="view_form">
+            <p>Enter nostr relay</p>
+            <p><input class="upload_relay"></p>
+            <form>
+                <p><input class="upload_form" type="file" onchange="if ( this.files[ 0 ].size < 266240 ) {upload_data.push( this.files[ 0 ] );} else {alert( 'File too large, make sure it is less than 260 kilobytes' ); this.value = null;}" /></p>
+            </form>
+            <p><button class="submit_upload_form">Submit</button></p>
+        </div>
+        <h2>View an image</h2>
+        <div class="view_form">
+            <p>Enter image id</p>
+            <p><input class="image_id"></p>
+            <p><button class="submit_view_form">Submit</button></p>
+        </div>
+        <script>
             $( '.upload_form' ).value = "";
             $( '.submit_upload_form' ).onclick = async () => {
                 do_upload_bar();
