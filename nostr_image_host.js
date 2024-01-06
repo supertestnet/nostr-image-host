@@ -104,5 +104,36 @@ var nostr_image_host = {
         var num = num.toString() + "000";
         num = Number( num );
         return new Promise( resolve => setTimeout( resolve, num ) );
+    },
+    uploadToNostr: async ( file, relay, debug ) => {
+        return new Promise( function( resolve, reject ) {
+            if ( !relay ) return;
+            if ( !relay.startsWith( "wss://" ) ) relay = "wss://" + relay;
+            var b64 = await nostr_image_host.encodeBase64( file );
+            var socket = new WebSocket( relay );
+            socket.addEventListener('open', async function( e ) {
+                var array = b64.match(/.{1,4000}/g);
+                var i; for ( i=0; i<array.length; i++ ) {
+                    var note = array[ i ];
+                    var part = i + 1;
+                    var whole = array.length;
+                    var id = await nostr_image_host.sendNoteAndReturnId( note, part, whole, socket );
+                    if ( debug ) var percent = ( ( part / whole ) * 100 ).toFixed( 2 );
+                    if ( debug ) console.log( `${percent}% uploaded` );
+                    if ( percent == 100 ) resolve( id + textToHex( relay ) );
+                    await waitSomeSeconds( 2 );
+                }
+                socket.close();
+            });
+        });
+    },
+    encodeBase64: file => {
+        return new Promise( function( resolve, reject ) {
+            var imgReader = new FileReader();
+            imgReader.onloadend = function() {
+                resolve( imgReader.result.toString() );
+            }
+            imgReader.readAsDataURL( file );
+        });
     }
 }
