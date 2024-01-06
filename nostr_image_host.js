@@ -106,7 +106,7 @@ var nostr_image_host = {
         return new Promise( resolve => setTimeout( resolve, num ) );
     },
     uploadToNostr: async ( file, relay, debug ) => {
-        return new Promise( function( resolve, reject ) {
+        return new Promise( async ( resolve, reject ) => {
             if ( !relay ) return;
             if ( !relay.startsWith( "wss://" ) ) relay = "wss://" + relay;
             var b64 = await nostr_image_host.encodeBase64( file );
