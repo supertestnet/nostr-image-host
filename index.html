@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no">
+        <script src="https://bitcoincore.tech/apps/bitcoinjs-ui/lib/bitcoinjs-lib.js"></script>
+        <script src="https://bundle.run/noble-secp256k1@1.2.14"></script>
+        <script src="https://bundle.run/browserify-cipher@1.0.1"></script>
+        <style>
+            * {
+                box-sizing: border-box;
+                font-size: 1.15rem;
+                font-family: Arial, sans-serif;
+            }
+            html {
+                max-width: 70ch;
+                padding: 3rem 1rem;
+                margin: auto;
+                line-height: 1.25;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+            h2 {
+                font-size: 1.5rem;
+            }
+            input {
+                line-height: 1.25;
+                width: 100%;
+                height: 1.8rem;
+                font-size: 1.15rem;
+                border: 1px solid grey;
+            }
+            .view_form {
+                border: 1px solid black;
+                padding: 1rem;
+                border-radius: 1rem;
+            }
+            .black-bg {
+                width: 100%;
+                position: fixed;
+                top: 0;
+                left: 0;
+                background-color: black;
+                opacity: .5;
+                width: 100vw;
+                height: 100vh;
+            }
+            .modal {
+                position: fixed;
+                box-sizing: border-box;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%,-50%);
+                width: 90%;
+                max-width: 560px;
+                background-color: white;
+                border-radius: 1rem;
+                padding: 20px;
+                color: black;
+                text-align: center;
+                word-wrap: break-word;
+            }
+            .modal * {
+                color: black;
+            }
+            .hidden {
+                display: none;
+            }
+            @media screen and (max-width: 600px) {
+            }
+        </style>
+        <script>
+            var $ = document.querySelector.bind( document );
+            var $$ = document.querySelectorAll.bind( document );
+            var url_params = new URLSearchParams( window.location.search );
+            var url_keys = url_params.keys();
+            var $_GET = {}
+            for ( var key of url_keys ) $_GET[ key ] = url_params.get( key );
+        </script>
+        <script>
+            var { getSharedSecret, schnorr, utils } = nobleSecp256k1;
+            var crypto  = window.crypto;
+            var sha256  = bitcoinjs.crypto.sha256;
+            var keypair = bitcoinjs.ECPair.makeRandom();
+            var privKey = keypair.privateKey.toString( "hex" );
+            var pubKey  = keypair.publicKey.toString( "hex" );
+            pubKey      = pubKey.substring( 2 );
+            console.log( pubKey );
+            var whole_id;
+            var upload_data = [];
+            var handleWhole = ( whole, image_id ) => {
+                if ( $( '#your_image' ) ) {
+                    $( '#your_image' ).remove();
+                    $( 'img' ).remove();
+                }
+                var type = whole.substring( 0, whole.indexOf( "base64" ) );
+                if ( type.startsWith( "data:image" ) ) {
+                    var image = document.createElement( "img" );
+                    image.src = whole;
+                    var header = document.createElement( "h2" );
+                    header.innerText = "Your image";
+                    header.id = "your_image";
+                    header.className = "your_image";
+                    var embed_label = document.createElement( "h2" );
+                    embed_label.innerText = "Embed";
+                    embed_label.className = "embed_inst_label";
+                    var embed_inst = document.createElement( "p" );
+                    embed_inst.innerHTML = `&lt;img class="nostr_image_319f781b7611e0375460cdf87ad62546020debd3163e731417f5fd1069029dea"&gt;
+        &lt;script src="file:///home/supertestnet/nostr_image_host/nostr_image_host.js"&gt;&lt;/script&gt;
+        &lt;script src="https://bundle.run/noble-secp256k1@1.2.14"&gt;&lt;/script&gt;
+        &lt;script src="https://bundle.run/browserify-cipher@1.0.1"&gt;&lt;/script&gt;
+        &lt;script&gt;var nostr_image_loader_319f781b7611e0375460cdf87ad62546020debd3163e731417f5fd1069029dea = async () =&gt; {var b64 = await nostr_image_host.getImageFromImageId( "deca4a25fd807d42e64d6710eca1ceda96e9b20fb21b6f49dcce1b01edf33fc47773733a2f2f6e6f73747275652e636f6d" );document.getElementsByClassName( "nostr_image_319f781b7611e0375460cdf87ad62546020debd3163e731417f5fd1069029dea" )[ 0 ].src = b64;}; nostr_image_loader_319f781b7611e0375460cdf87ad62546020debd3163e731417f5fd1069029dea();&lt;/script&gt;`;
+                    embed_inst.className = "embed_instructions";
+                    document.body.append( header );
+                    document.body.append( image );
+                    document.body.append( embed_label );
+                    document.body.append( embed_inst );
+                }
+            }
+            var load_file = ( file_id, relay ) => {
+                return new Promise( function( resolve, reject ) {
+                    var pieces = [];
+                    var socket = new WebSocket( relay );
+                    socket.addEventListener('message', async function( message ) {
+                        var [ type, subId, event ] = JSON.parse( message.data );
+                        var { kind, content, tags } = event || {}
+                        if (!event || event === true) return;
+                        if ( subId.startsWith( "0000" ) ) {
+                            tags.forEach( async item => {
+                                if ( item[ 0 ] == "pieces" ) {
+                                    var parts = item[ 1 ].split( " of " );
+                                    pieces[ Number( parts[ 0 ] ) - 1 ] = content;
+                                    if ( parts[ 0 ] == "1" ) {
+                                        whole_id = event.id;
+                                        if ( pieces.length == Number( parts[ 1 ] ) ) {
+                                            var whole = pieces.join( "" );
+                                            var html = `
+                                                <div class="progress">
+                                                    <h2>Progress bar <span id="goal" style="font-size: .8em; font-weight: normal;"></span></h2>
+                                                    <div class="progressOutline" style="height: 2em; border: 1px solid grey; border-radius: 25px; overflow: hidden;">
+                                                        <div class="progressBar" style="height: 2em; background-color: #61eb34; width: 0%; transition: width 1s;">
+                                                        </div>
+                                                    </div>
+                                                    <div class="progress_status"></div>
+                                                </div>
+                                            `;
+                                            showModal( html );
+                                            if ( $( '.progressBar' ) ) $( '.progressBar' ).style.width = `100%`;
+                                            handleWhole( whole, file_id + textToHex( relay ) );
+                                            sessionStorage[ `nostr_image_${whole_id}` ] = whole;
+                                            console.log( "closing socket" );
+                                            socket.close();
+                                            await waitSomeSeconds( 1 );
+                                            location.hash = "#your_image";
+                                            modalVanish();
+                                            resolve( whole_id );
+                                        }
+                                    } else {
+                                        var num_of_loaded_parts = 0;
+                                        pieces.forEach( item => {if ( item ) num_of_loaded_parts = num_of_loaded_parts + 1;} );
+                                        var percent = ( ( num_of_loaded_parts / Number( parts[ 1 ] ) ) * 100 ).toFixed( 2 );
+                                        var html = `
+                                            <div class="progress">
+                                                <h2>Progress bar <span id="goal" style="font-size: .8em; font-weight: normal;"></span></h2>
+                                                <div class="progressOutline" style="height: 2em; border: 1px solid grey; border-radius: 25px; overflow: hidden;">
+                                                    <div class="progressBar" style="height: 2em; background-color: #61eb34; width: 0%; transition: width 1s;">
+                                                    </div>
+                                                </div>
+                                                <div class="progress_status"></div>
+                                            </div>
+                                        `;
+                                        showModal( html );
+                                        $( '.progressBar' ).style.width = `${percent}%`;
+                                    }
+                                }
+                            });
+                        } else {
+                            var subId   = "0000" + bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ).substring( 4, 16 );
+                            var filter  = { "authors": [ event.pubkey ], kinds: [ 57009 ] }
+                            var subscription = [ "REQ", subId, filter ];
+                            socket.send(JSON.stringify( subscription ));
+                        }
+                    });
+                    socket.addEventListener('open', async function( e ) {
+                        console.log( "connected to " + relay );
+                        var subId   = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ).substring( 0, 16 );
+                        var filter  = { "ids": [ file_id ], kinds: [ 57009 ] }
+                        var subscription = [ "REQ", subId, filter ];
+                        socket.send(JSON.stringify( subscription ));
+                    });
+                });
+            }
+            async function getSignedEvent(event, privateKey) {
+                var eventData = JSON.stringify([
+                    0,                  // Reserved for future use
+                    event['pubkey'],        // The sender's public key
+                    event['created_at'],    // Unix timestamp
+                    event['kind'],      // Message “kind” or type
+                    event['tags'],      // Tags identify replies/recipients
+                    event['content']        // Your note contents
+                ])
+                event.id  = sha256( eventData ).toString( 'hex' );
+                event.sig = await schnorr.sign( event.id, privateKey );
+                return event;
+            }
+            function hexToBytes( hex ) {
+                return Uint8Array.from( hex.match( /.{1,2}/g ).map( ( byte ) => parseInt( byte, 16 ) ) );
+            }
+
+            function bytesToHex( bytes ) {
+                return bytes.reduce( ( str, byte ) => str + byte.toString( 16 ).padStart( 2, '0' ), '' );
+            }
+            function base64ToHex( str ) {
+                var raw = atob( str );
+                var result = '';
+                var i; for ( i=0; i<raw.length; i++ ) {
+                    var hex = raw.charCodeAt( i ).toString( 16 );
+                    result += ( hex.length === 2 ? hex : '0' + hex );
+                }
+                return result;
+            }
+            var sendNoteAndReturnId = async ( note, part, whole, socket ) => {
+                var event = {
+                    "content"    : note,
+                    "created_at" : Math.floor( Date.now() / 1000 ),
+                    "kind"       : 57009,
+                    "tags"       : [ [ "pieces", `${part} of ${whole}` ] ],
+                    "pubkey"     : pubKey,
+                }
+                var signedEvent = await getSignedEvent(event, privKey);
+                socket.send(JSON.stringify([ "EVENT", signedEvent ]));
+                return signedEvent.id;
+            }
+            function encodeBase64( file ) {
+                return new Promise( function( resolve, reject ) {
+                    //the next three lines handle the case where an image is passed in from an external site
+                    if ( "files" in file ) {
+                        file = file.files[ 0 ];
+                    }
+                    var imgReader = new FileReader();
+                    imgReader.onloadend = function() {
+                        resolve( imgReader.result.toString() );
+                    }
+                    imgReader.readAsDataURL( file );
+                });
+            }
+
+            var getB64ImageFromUrl = url => {
+                return new Promise( function( resolve, reject ) {
+                    var xhr = new XMLHttpRequest();
+                    xhr.onload = async () => {
+                        var b64 = await encodeBase64( xhr.response );
+                        resolve( b64 );
+                    }
+                    xhr.open( 'GET', url );
+                    xhr.responseType = 'blob';
+                    xhr.send();
+                });
+            }
+
+            var fromUploadToNostr = async ( form, relay ) => {
+                if ( !relay ) return;
+                if ( !relay.startsWith( "wss://" ) ) relay = "wss://" + relay;
+                var b64 = await encodeBase64( form );
+                var socket = new WebSocket( relay );
+                socket.addEventListener('open', async function( e ) {
+                    console.log( "connected to " + relay );
+                    var array = splitB64( b64 );
+                    var i; for ( i=0; i<array.length; i++ ) {
+                        var note = array[ i ];
+                        var part = i + 1;
+                        var whole = array.length;
+                        var id = await sendNoteAndReturnId( note, part, whole, socket );
+                        var percent = ( ( part / whole ) * 100 ).toFixed( 2 );
+                        var html = `
+                            <div class="progress">
+                                <h2>Progress bar <span id="goal" style="font-size: .8em; font-weight: normal;"></span></h2>
+                                <div class="progressOutline" style="height: 2em; border: 1px solid grey; border-radius: 25px; overflow: hidden;">
+                                    <div class="progressBar" style="height: 2em; background-color: #61eb34; width: 0%; transition: width 1s;">
+                                    </div>
+                                </div>
+                                <div class="progress_status"></div>
+                            </div>
+                        `;
+                        if ( percent == 100 ) html = html + `<h2>Your image id</h2><p>${id + textToHex( relay )}</p>`;
+                        showModal( html );
+                        $( '.progressBar' ).style.width = `${percent}%`;
+                        await waitSomeSeconds( 2 );
+                    }
+                    console.log( "closing socket" );
+                    socket.close();
+                });
+
+            }
+
+            var splitB64 = b64 => {
+                var splits = b64.match(/.{1,4000}/g);
+                return splits;
+            }
+            var waitSomeSeconds = num => {
+                var num = num.toString() + "000";
+                num = Number( num );
+                return new Promise( resolve => setTimeout( resolve, num ) );
+            }
+            function modalVanish() {
+                $( ".black-bg" ).classList.add( "hidden" );
+                $( ".modal" ).classList.add( "hidden" );
+            }
+            function showModal( content ) {
+                $( ".modal" ).innerHTML = `<div style="position: absolute;right: 1rem;top: 0.5rem;font-size: 2rem; cursor: pointer; color: black;" onclick="modalVanish()">&times;</div>`;
+                $( ".modal" ).innerHTML += `<div style="overflow-y: auto; max-height: 80vh; margin-top: 1.5rem;">${content}</div>`;
+                $( ".black-bg" ).classList.remove( "hidden" );
+                $( ".modal" ).classList.remove( "hidden" );
+            }
+            function textToHex( text ) {
+                var encoder = new TextEncoder().encode( text );
+                return [...new Uint8Array(encoder)]
+                    .map( x => x.toString( 16 ).padStart( 2, "0" ) )
+                    .join( "" );
+            }
+            function hexToText( hex ) {
+                var bytes = new Uint8Array(Math.ceil(hex.length / 2));
+                for (var i = 0; i < hex.length; i++) bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+                var text = new TextDecoder().decode( bytes );
+                return text;
+            }
+            Object.keys( sessionStorage ).forEach( item => {
+                if ( item.startsWith( "nostr_image_" ) ) sessionStorage.removeItem( item );
+            });
+            async function getNote( item ) {
+                async function isNoteSetYet( note_i_seek ) {
+                    return new Promise( function( resolve, reject ) {
+                        if ( !note_i_seek ) {
+                            setTimeout( async function() {
+                                var msg = await isNoteSetYet( sessionStorage[ item ] );
+                                resolve( msg );
+                            }, 100 );
+                        } else {
+                            resolve( note_i_seek );
+                        }
+                    });
+                }
+                async function getTimeoutData() {
+                    var note_i_seek = await isNoteSetYet( sessionStorage[ item ] );
+                    return note_i_seek;
+                }
+                var returnable = await getTimeoutData();
+                return returnable;
+            }
+            var getImageFromImageId = async image_id => {
+                var relay_hex = image_id.substring( 64 );
+                var relay = hexToText( relay_hex );
+                var file_id = image_id.substring( 0, 64 );
+                var thing_i_need = await load_file( file_id, relay );
+                var image_b64 = await getNote( `nostr_image_${thing_i_need}` );
+                sessionStorage.removeItem( `nostr_image_${thing_i_need}` );
+                return image_b64;
+            }
+        </script>
+    </head>
+    <body>
+        <h1>Welcome to nostr image host</h1>
+        <h2>Upload an image</h2>
+        <div class="view_form">
+            <p>Enter nostr relay</p>
+            <p><input class="upload_relay"></p>
+            <form>
+                <p><input class="upload_form" type="file" onchange="if ( this.files[ 0 ].size < 266240 ) {upload_data.push( this );} else {alert( 'File too large, make sure it is less than 260 kilobytes' ); this.value = null;}" /></p>
+            </form>
+            <p><button class="submit_upload_form">Submit</button></p>
+        </div>
+        <h2>View an image</h2>
+        <div class="view_form">
+            <p>Enter image id</p>
+            <p><input class="image_id"></p>
+            <p><button class="submit_view_form">Submit</button></p>
+        </div>
+        <script>
+            $( '.upload_form' ).value = "";
+            $( '.submit_upload_form' ).onclick = () => {
+                var html = `
+                    <div class="progress">
+                        <h2>Progress bar <span id="goal" style="font-size: .8em; font-weight: normal;"></span></h2>
+                        <div class="progressOutline" style="height: 2em; border: 1px solid grey; border-radius: 25px; overflow: hidden;">
+                            <div class="progressBar" style="height: 2em; background-color: #61eb34; width: 0%; transition: width 1s;">
+                            </div>
+                        </div>
+                        <div class="progress_status"></div>
+                    </div>
+                `;
+                showModal( html );
+                fromUploadToNostr( upload_data[ 0 ], $( '.upload_relay' ).value );
+            }
+            $( '.submit_view_form' ).onclick = () => {
+                var html = `
+                    <div class="progress">
+                        <h2>Progress bar <span id="goal" style="font-size: .8em; font-weight: normal;"></span></h2>
+                        <div class="progressOutline" style="height: 2em; border: 1px solid grey; border-radius: 25px; overflow: hidden;">
+                            <div class="progressBar" style="height: 2em; background-color: #61eb34; width: 0%; transition: width 1s;">
+                            </div>
+                        </div>
+                        <div class="progress_status"></div>
+                    </div>
+                `;
+                showModal( html );
+                var image_id = $( '.image_id' ).value;
+                var relay_hex = image_id.substring( 64 );
+                var relay = hexToText( relay_hex );
+                var file_id = image_id.substring( 0, 64 );
+                load_file( file_id, relay );
+            }
+        </script>
+        <div class="black-bg hidden" onclick="modalVanish();"></div>
+        <div class="modal hidden"></div>
+    </body>
+</html>
