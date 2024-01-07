@@ -111,7 +111,6 @@
                     embed_inst.innerHTML = `&lt;img class="nostr_image_host nostr_image_${image_id}"&gt;
         &lt;script src="https://supertestnet.github.io/nostr-image-host/nostr_image_host.js"&gt;&lt;/script&gt;
         &lt;script src="https://cdn.jsdelivr.net/gh/6502/sha256@main/sha256.js"&gt;&lt;/script&gt;
-        &lt;script src="https://bundle.run/browserify-cipher@1.0.1"&gt;&lt;/script&gt;
         &lt;script src="https://bundle.run/noble-secp256k1@1.2.14"&gt;&lt;/script&gt;
         &lt;script&gt;var nostr_image_loader_${image_id} = async () =&gt; {var b64 = await nostr_image_host.getImageFromImageId( "${image_id}" );document.getElementsByClassName( "nostr_image_${image_id}" )[ 0 ].src = b64;}; nostr_image_loader_${image_id}();&lt;/script&gt;`;
                     embed_inst.className = "embed_inst";
