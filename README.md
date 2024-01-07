@@ -24,7 +24,29 @@ If I was running a nostr relay, I would consider it spam and I would block it, u
 
 # How come the image identifier doesn't have a file extension?
 
-Because it isn't a file. It's a nostr event id + a hex encoded nostr relay uri. You can't put the image identifier directly in the "src" tag of an html image, you have to first "assemble" the image by piecing it together from the various events it's been chunked into, then pass a base64-encoded image into your src tag. There is some sample code for this in nostr_image_host.js -- see the function `load_file`. An example of how to use it in an html page is provided in index.html.
+Because it isn't a file. It's a nostr event id + a hex encoded nostr relay uri, all re-encoded as a bech32 string with the "nimg" prefix for "nostr image." You can't put the nimg string directly in the "src" tag of an html image, you have to first "assemble" the image by piecing it together from the various events it's been chunked into. It will come to you in base64 format, then you just pass that base64 string into your src tag. There is some sample code for this in nostr_image_host.js -- see the function `load_file`. An example of how to use it in an html page is provided in index.html.
+
+# Does this have any dependencies?
+
+Yes, it won't work without the following dependencies:
+
+```
+<script src="https://cdn.jsdelivr.net/gh/6502/sha256@main/sha256.js"></script>
+<script src="https://bundle.run/noble-secp256k1@1.2.14"></script>
+<script src="https://bundle.run/bech32@2.0.0"></script>
+```
+
+You can find nodejs versions here:
+
+```
+https://www.npmjs.com/package/sha.js
+//const shajs = require('sha.js')
+//const sha256 = str_or_bytes => shajs('sha256').update(str_or_bytes).digest('hex')
+https://www.npmjs.com/package/noble-secp256k1
+//const nobleSecp256k1 = require('noble-secp256k1')
+https://www.npmjs.com/package/bech32
+//const bech32 = require('bech32')
+```
 
 # What are the next steps?
 
