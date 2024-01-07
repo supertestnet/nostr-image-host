@@ -3,7 +3,8 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, user-scalable=no">
-        <script src="https://supertestnet.github.io/nostr-image-host/nostr_image_host.js"></script>
+        <!-- <script src="https://supertestnet.github.io/nostr-image-host/nostr_image_host.js"></script> -->
+        <script src="file:///home/supertestnet/nostr_image_host/nostr_image_host.js"></script>
         <script src="https://cdn.jsdelivr.net/gh/6502/sha256@main/sha256.js"></script>
         <script src="https://bundle.run/noble-secp256k1@1.2.14"></script>
         <style>
@@ -131,7 +132,7 @@
                 $( ".black-bg" ).classList.add( "hidden" );
                 $( ".modal" ).classList.add( "hidden" );
             }
-            var do_upload_bar = async image_id => {
+            var do_upload_bar = async ( hash, image_id ) => {
                 var html = `
                     <div class="progress">
                         <h2>Progress bar <span id="goal" style="font-size: .8em; font-weight: normal;"></span></h2>
@@ -142,14 +143,14 @@
                         <div class="progress_status"></div>
                     </div>
                 `;
-                if ( nostr_image_host.percent_done_uploading == "100%" ) html = html + `<h2>Your image id</h2><p>${image_id}</p>`;
+                if ( nostr_image_host[ `n_${hash}_percent_done_uploading` ] == "100%" ) html = html + `<h2>Your image id</h2><p>${image_id}</p>`;
                 showModal( html );
-                var percent = nostr_image_host.percent_done_uploading;
+                var percent = nostr_image_host[ `n_${hash}_percent_done_uploading` ];
                 $( '.progressBar' ).style.width = percent;
                 await nostr_image_host.waitSomeSeconds( 2 );
-                if ( nostr_image_host.percent_done_uploading != "100%" ) do_upload_bar();
+                if ( nostr_image_host[ `n_${hash}_percent_done_uploading` ] != "100%" ) do_upload_bar( hash );
             }
-            var do_download_bar = async () => {
+            var do_download_bar = async file_id => {
                 var html = `
                     <div class="progress">
                         <h2>Progress bar <span id="goal" style="font-size: .8em; font-weight: normal;"></span></h2>
@@ -162,12 +163,13 @@
                 `;
                 showModal( html );
                 await nostr_image_host.waitSomeSeconds( 1 );
-                var percent = nostr_image_host.percent_done_downloading;
-                $( '.progressBar' ).style.width = nostr_image_host.percent_done_downloading;
+                console.log( `n_${file_id.substring( 0, 64 )}_percent_done_downloading` );
+                console.log( "percent:", nostr_image_host[ `n_${file_id.substring( 0, 64 )}_percent_done_downloading` ] );
+                $( '.progressBar' ).style.width = nostr_image_host[ `n_${file_id.substring( 0, 64 )}_percent_done_downloading` ];
                 await nostr_image_host.waitSomeSeconds( 1 );
-                if ( nostr_image_host.percent_done_downloading != "100%" ) do_download_bar();
+                if ( nostr_image_host[ `n_${file_id.substring( 0, 64 )}_percent_done_downloading` ] != "100%" ) do_download_bar( file_id );
                 else {
-                    $( '.progressBar' ).style.width = nostr_image_host.percent_done_downloading;
+                    $( '.progressBar' ).style.width = nostr_image_host[ `n_${file_id.substring( 0, 64 )}_percent_done_downloading` ];
                     await nostr_image_host.waitSomeSeconds( 2 );
                     modalVanish();
                 }
@@ -196,13 +198,17 @@
         <script>
             $( '.upload_form' ).value = "";
             $( '.submit_upload_form' ).onclick = async () => {
-                do_upload_bar();
-                var id = await nostr_image_host.uploadToNostr( upload_data[ 0 ], $( '.upload_relay' ).value );
-                do_upload_bar( id );
+                var file = upload_data[ 0 ];
+                var b64 = await nostr_image_host.encodeBase64( file );
+                var hash = nostr_image_host.bytesToHex( sha256( b64 ) );
+                upload_data = [];
+                do_upload_bar( hash );
+                var id = await nostr_image_host.uploadToNostr( file, $( '.upload_relay' ).value );
+                do_upload_bar( hash, id );
             }
             $( '.submit_view_form' ).onclick = async () => {
-                do_download_bar();
                 var image_id = $( '.image_id' ).value;
+                do_download_bar( image_id );
                 var b64 = await nostr_image_host.getImageFromImageId( image_id );
                 handleWhole( b64, image_id );
                 location.hash = "#your_image";
