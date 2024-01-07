@@ -118,8 +118,6 @@ var nostr_image_host = {
                                     nostr_image_host[ `n_${file_id}_percent_done_downloading` ] = `100%`;
                                     nostr_image_host[ `nostr_image_${event.id}` ] = whole;
                                     socket.close();
-                                    await nostr_image_host.waitSomeSeconds( 1 );
-                                    location.hash = "#your_image";
                                     resolve( event.id );
                                 }
                             } else {
