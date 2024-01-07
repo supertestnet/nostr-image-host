@@ -109,6 +109,9 @@
                     embed_label.innerText = "Embed this image on your page";
                     embed_label.className = "embed_inst_label";
                     var embed_inst = document.createElement( "p" );
+                    console.log( image_id );
+                    image_id = nostr_image_host.hexToBech32( "nimg", image_id );
+                    console.log( image_id );
                     embed_inst.innerHTML = `&lt;img class="nostr_image_host nostr_image_${image_id}"&gt;
         &lt;script src="https://supertestnet.github.io/nostr-image-host/nostr_image_host.js"&gt;&lt;/script&gt;
         &lt;script src="https://cdn.jsdelivr.net/gh/6502/sha256@main/sha256.js"&gt;&lt;/script&gt;
