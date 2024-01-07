@@ -102,7 +102,6 @@ var nostr_image_host = {
         return new Promise( function( resolve, reject ) {
             var pieces = [];
             var socket = new WebSocket( relay );
-            console.log( "file_id:", file_id );
             nostr_image_host[ `n_${file_id}_percent_done_downloading` ] = `0%`;
             socket.addEventListener('message', async function( message ) {
                 var [ type, subId, event ] = JSON.parse( message.data );
