@@ -6,6 +6,7 @@
         <script src="https://supertestnet.github.io/nostr-image-host/nostr_image_host.js"></script>
         <script src="https://cdn.jsdelivr.net/gh/6502/sha256@main/sha256.js"></script>
         <script src="https://bundle.run/noble-secp256k1@1.2.14"></script>
+        <script src="https://bundle.run/bech32@2.0.0"></script>
         <style>
             * {
                 box-sizing: border-box;
@@ -112,6 +113,7 @@
         &lt;script src="https://supertestnet.github.io/nostr-image-host/nostr_image_host.js"&gt;&lt;/script&gt;
         &lt;script src="https://cdn.jsdelivr.net/gh/6502/sha256@main/sha256.js"&gt;&lt;/script&gt;
         &lt;script src="https://bundle.run/noble-secp256k1@1.2.14"&gt;&lt;/script&gt;
+        &lt;script src="https://bundle.run/bech32@2.0.0"&gt;&lt;/script&gt;
         &lt;script&gt;var nostr_image_loader_${image_id} = async () =&gt; {var b64 = await nostr_image_host.getImageFromImageId( "${image_id}" );document.getElementsByClassName( "nostr_image_${image_id}" )[ 0 ].src = b64;}; nostr_image_loader_${image_id}();&lt;/script&gt;`;
                     embed_inst.className = "embed_inst";
                     document.body.append( header );
@@ -161,8 +163,6 @@
                 `;
                 showModal( html );
                 await nostr_image_host.waitSomeSeconds( 1 );
-                console.log( `n_${file_id.substring( 0, 64 )}_percent_done_downloading` );
-                console.log( "percent:", nostr_image_host[ `n_${file_id.substring( 0, 64 )}_percent_done_downloading` ] );
                 $( '.progressBar' ).style.width = nostr_image_host[ `n_${file_id.substring( 0, 64 )}_percent_done_downloading` ];
                 await nostr_image_host.waitSomeSeconds( 1 );
                 if ( nostr_image_host[ `n_${file_id.substring( 0, 64 )}_percent_done_downloading` ] != "100%" ) do_download_bar( file_id );
@@ -206,9 +206,10 @@
             }
             $( '.submit_view_form' ).onclick = async () => {
                 var image_id = $( '.image_id' ).value;
-                do_download_bar( image_id );
+                image_id_hex = nostr_image_host.bech32ToHex( image_id );
+                do_download_bar( image_id_hex );
                 var b64 = await nostr_image_host.getImageFromImageId( image_id );
-                handleWhole( b64, image_id );
+                handleWhole( b64, image_id_hex );
                 location.hash = "#your_image";
             }
         </script>
