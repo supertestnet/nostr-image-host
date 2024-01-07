@@ -13,6 +13,14 @@ var nostr_image_host = {
         var text = new TextDecoder().decode( bytes );
         return text;
     },
+    hexToBech32: ( prefix, hex ) => {
+        var words = bech32.bech32m.toWords( nostr_image_host.hexToBytes( hex ) );
+        return bech32.bech32m.encode( prefix, words );
+    },
+    bech32ToHex: bech32string => {
+        var decoded = bech32.bech32m.fromWords( bech32.bech32m.decode( bech32string ).words );
+        return nostr_image_host.bytesToHex( decoded );
+    },
     encodeBase64: file => {
         return new Promise( function( resolve, reject ) {
             var imgReader = new FileReader();
@@ -91,7 +99,7 @@ var nostr_image_host = {
                     var id = await nostr_image_host.sendNoteAndReturnId( note, part, whole, socket, privKey, pubKey );
                     var percent = Number( ( ( part / whole ) * 100 ).toFixed( 2 ) );
                     nostr_image_host[ `n_${hash}_percent_done_uploading` ] = percent + "%";
-                    if ( percent == 100 ) resolve( id + nostr_image_host.textToHex( relay ) );
+                    if ( percent == 100 ) resolve( nostr_image_host.hexToBech32( "nimg", id + nostr_image_host.textToHex( relay ) ) );
                     await nostr_image_host.waitSomeSeconds( 2 );
                 }
                 socket.close();
@@ -144,6 +152,7 @@ var nostr_image_host = {
         });
     },
     getImageFromImageId: async image_id => {
+        image_id = nostr_image_host.bech32ToHex( image_id );
         var relay_hex = image_id.substring( 64 );
         var relay = nostr_image_host.hexToText( relay_hex );
         var file_id = image_id.substring( 0, 64 );
