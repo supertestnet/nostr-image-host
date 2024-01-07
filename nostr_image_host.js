@@ -18,7 +18,7 @@ var nostr_image_host = {
         return bech32.bech32m.encode( prefix, words );
     },
     bech32ToHex: bech32string => {
-        var decoded = bech32.bech32m.fromWords( bech32.bech32m.decode( bech32string ).words );
+        var decoded = bech32.bech32m.fromWords( bech32.bech32m.decode( bech32string, 10000 ).words );
         return nostr_image_host.bytesToHex( decoded );
     },
     encodeBase64: file => {
