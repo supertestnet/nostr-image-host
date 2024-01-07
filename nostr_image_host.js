@@ -1,8 +1,4 @@
 var nostr_image_host = {
-    percent_done_uploading: "0%",
-    percent_done_downloading: "0%",
-    whole_id: null,
-    upload_data: [],
     hexToBytes: hex => Uint8Array.from( hex.match( /.{1,2}/g ).map( ( byte ) => parseInt( byte, 16 ) ) ),
     bytesToHex: bytes => bytes.reduce( ( str, byte ) => str + byte.toString( 16 ).padStart( 2, "0" ), "" ),
     textToHex: text => {
@@ -36,7 +32,7 @@ var nostr_image_host = {
             return new Promise( function( resolve, reject ) {
                 if ( !note_i_seek ) {
                     setTimeout( async function() {
-                        var msg = await isNoteSetYet( sessionStorage[ item ] );
+                        var msg = await isNoteSetYet( nostr_image_host[ item ] );
                         resolve( msg );
                     }, 100 );
                 } else {
@@ -45,7 +41,7 @@ var nostr_image_host = {
             });
         }
         async function getTimeoutData() {
-            var note_i_seek = await isNoteSetYet( sessionStorage[ item ] );
+            var note_i_seek = await isNoteSetYet( nostr_image_host[ item ] );
             return note_i_seek;
         }
         var returnable = await getTimeoutData();
@@ -81,19 +77,20 @@ var nostr_image_host = {
             if ( !relay ) return;
             if ( !relay.startsWith( "wss://" ) ) relay = "wss://" + relay;
             var b64 = await nostr_image_host.encodeBase64( file );
+            var hash = nostr_image_host.bytesToHex( sha256( b64 ) );
             var socket = new WebSocket( relay );
             socket.addEventListener('open', async function( e ) {
                 var array = b64.match(/.{1,4000}/g);
                 var privKey = nostr_image_host.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() );
                 var pubKey = nobleSecp256k1.getPublicKey( privKey, true ).substring( 2 );
-                nostr_image_host.percent_done_uploading = "0%";
+                nostr_image_host[ `n_${hash}_percent_done_uploading` ] = "0%";
                 var i; for ( i=0; i<array.length; i++ ) {
                     var note = array[ i ];
                     var part = i + 1;
                     var whole = array.length;
                     var id = await nostr_image_host.sendNoteAndReturnId( note, part, whole, socket, privKey, pubKey );
                     var percent = Number( ( ( part / whole ) * 100 ).toFixed( 2 ) );
-                    nostr_image_host.percent_done_uploading = percent + "%";
+                    nostr_image_host[ `n_${hash}_percent_done_uploading` ] = percent + "%";
                     if ( percent == 100 ) resolve( id + nostr_image_host.textToHex( relay ) );
                     await nostr_image_host.waitSomeSeconds( 2 );
                 }
@@ -105,7 +102,8 @@ var nostr_image_host = {
         return new Promise( function( resolve, reject ) {
             var pieces = [];
             var socket = new WebSocket( relay );
-            nostr_image_host.percent_done_downloading = `0%`;
+            console.log( "file_id:", file_id );
+            nostr_image_host[ `n_${file_id}_percent_done_downloading` ] = `0%`;
             socket.addEventListener('message', async function( message ) {
                 var [ type, subId, event ] = JSON.parse( message.data );
                 var { kind, content, tags } = event || {}
@@ -116,21 +114,20 @@ var nostr_image_host = {
                             var parts = item[ 1 ].split( " of " );
                             pieces[ Number( parts[ 0 ] ) - 1 ] = content;
                             if ( parts[ 0 ] == "1" ) {
-                                nostr_image_host.whole_id = event.id;
                                 if ( pieces.length == Number( parts[ 1 ] ) ) {
                                     var whole = pieces.join( "" );
-                                    nostr_image_host.percent_done_downloading = `100%`;
-                                    sessionStorage[ `nostr_image_${nostr_image_host.whole_id}` ] = whole;
+                                    nostr_image_host[ `n_${file_id}_percent_done_downloading` ] = `100%`;
+                                    nostr_image_host[ `nostr_image_${event.id}` ] = whole;
                                     socket.close();
                                     await nostr_image_host.waitSomeSeconds( 1 );
                                     location.hash = "#your_image";
-                                    resolve( nostr_image_host.whole_id );
+                                    resolve( event.id );
                                 }
                             } else {
                                 var num_of_loaded_parts = 0;
                                 pieces.forEach( item => {if ( item ) num_of_loaded_parts = num_of_loaded_parts + 1;} );
                                 var percent = Number( ( ( num_of_loaded_parts / Number( parts[ 1 ] ) ) * 100 ).toFixed( 2 ) );
-                                nostr_image_host.percent_done_downloading = `${percent}%`;
+                                nostr_image_host[ `n_${file_id}_percent_done_downloading` ] = `${percent}%`;
                             }
                         }
                     });
@@ -155,7 +152,7 @@ var nostr_image_host = {
         var file_id = image_id.substring( 0, 64 );
         var thing_i_need = await nostr_image_host.load_file( file_id, relay );
         var image_b64 = await nostr_image_host.getNote( `nostr_image_${thing_i_need}` );
-        sessionStorage.removeItem( `nostr_image_${thing_i_need}` );
+        delete nostr_image_host[ `nostr_image_${thing_i_need}` ];
         return image_b64;
     }
 }
