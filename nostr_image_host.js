@@ -29,6 +29,8 @@ var nostr_image_host = {
             var imgReader = new FileReader();
             imgReader.onloadend = async event => {
                 alert( 1 );
+                alert( event );
+                alert( event.target.result );
                 var uint = new Uint8Array( event.target.result );
                 alert( uint );
                 var hex = nostr_image_host.bytesToHex( uint );
