@@ -51,7 +51,11 @@ To pass an image file to the `uploadToNostr()` function, I usually use an html f
 <script>
     var relay = "wss://relay.damus.io";
     async function upload( image_file ) {
-        if ( image_file.size >= 266240 ) {alert( 'File too large, make sure it is less than 260 kilobytes' ); this.value = null; return;}
+        if ( image_file.size >= 266240 ) {
+            alert( 'File too large, make sure it is less than 260 kilobytes' );
+            this.value = null;
+            return;
+        }
         var image_id = await nostr_image_host.uploadToNostr( image_file, relay );
         console.log( image_id );
     }
