@@ -4,6 +4,15 @@
         <meta charset="UTF-8">
     </head>
     <body>
-        <p><input class="upload_form" type="file" onchange="alert( this.files[ 0 ].size )" /></p>
+        <div class="view_form">
+            <p><input class="upload_form" type="file" onchange="if ( this.files[ 0 ].size < 266240 ) {upload_data.push( this.files[ 0 ] );} else {alert( 'File too large, make sure it is less than 260 kilobytes' ); this.value = null;}" /></p>
+            <p><button class="submit_upload_form">Submit</button></p>
+        </div>
+        <script>
+            var upload_data = [];
+            document.getElementsByClassName( "submit_upload_form" )[ 0 ].onclick = () => {
+                alert( upload_data[ 0 ].size );
+            }
+        </script>
     </body>
 </html>
