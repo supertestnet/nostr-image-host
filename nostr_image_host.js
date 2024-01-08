@@ -25,13 +25,10 @@ var nostr_image_host = {
     encodeBase64: file => {
         return new Promise( function( resolve, reject ) {
             var imgReader = new FileReader();
-            imgReader.onloadend = async event => {
-                var uint = new Uint8Array( event.target.result );
-                var hex = nostr_image_host.bytesToHex( uint );
-                var base64 = nostr_image_host.hexToBase64( hex );
-                resolve( base64 );
+            imgReader.onloadend = function() {
+                resolve( imgReader.result.toString() );
             }
-            imgReader.readAsArrayBuffer(file);
+            imgReader.readAsDataURL( file );
         });
     },
     waitSomeSeconds: num => {
