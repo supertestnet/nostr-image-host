@@ -22,6 +22,18 @@ var nostr_image_host = {
         return nostr_image_host.bytesToHex( decoded );
     },
     hexToBase64: hex => btoa( hex.match( /\w{2}/g ).map( a => String.fromCharCode( parseInt( a, 16 ) ) ).join( "" ) ),
+    alt_encodeBase64: file => {
+        return new Promise( function( resolve, reject ) {
+            var imgReader = new FileReader();
+            imgReader.onloadend = async event => {
+                var uint = new Uint8Array( event.target.result );
+                var hex = nostr_image_host.bytesToHex( uint );
+                var base64 = nostr_image_host.hexToBase64( hex );
+                resolve( "data:" + file.type + ";base64," + base64 );
+            }
+            imgReader.readAsArrayBuffer(file);
+        });
+    },
     encodeBase64: file => {
         return new Promise( function( resolve, reject ) {
             var imgReader = new FileReader();
