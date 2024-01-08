@@ -20,9 +20,13 @@
                 var file = upload_data[ 0 ];
                 alert( file.size );
                 try {
+                    alert( 0 );
                     var b64 = await nostr_image_host.encodeBase64( file );
+                    alert( 1 );
                 } catch( e ) {
+                    alert( 2 );
                     alert( e );
+                    alert( 3 );
                 }
                 alert( b64 );
                 var hash = nostr_image_host.bytesToHex( sha256( b64 ) );
