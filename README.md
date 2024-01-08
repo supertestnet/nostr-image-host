@@ -8,7 +8,7 @@ Just click here: https://supertestnet.github.io/nostr-image-host/
 
 # What is this?
 
-It's an image host, like imgbb.com or imgur, except you don't need an api key to use it. And you need some javascript.
+It's an image host, like imgbb.com or imgur, except you don't need an api key to use it in your development projects. Instead, you just need some javascript.
 
 # How does it work?
 
