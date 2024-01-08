@@ -37,7 +37,7 @@ As their names imply, one of them uploads an image file to nostr and returns an 
 ```html
 <img class="my_image">
 <script>
-    var base64 = await nostr_image_host.downloadFromNostr( "${image_id}" );
+    var base64 = await nostr_image_host.downloadFromNostr( image_id );
     $( '.my_image' ).src = base64;
 </script>
 ```
