@@ -18,8 +18,11 @@
             var upload_data = [];
             document.getElementsByClassName( "submit_upload_form" )[ 0 ].onclick = async () => {
                 var file = upload_data[ 0 ];
-                var test = await nostr_image_host.encodeBase64( file );
-                alert( test );
+                var test1 = await nostr_image_host.encodeBase64( file );
+                var test2 = await nostr_image_host.alt_encodeBase64( file );
+                alert( test1 );
+                alert( test2 );
+                alert( test1 == test2 );
                 // try {
                 //     await nostr_image_host.waitSomeSeconds( 2 );
                 //     var b64 = await nostr_image_host.encodeBase64( file );
