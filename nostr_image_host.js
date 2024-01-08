@@ -21,13 +21,17 @@ var nostr_image_host = {
         var decoded = bech32.bech32m.fromWords( bech32.bech32m.decode( bech32string, 10000 ).words );
         return nostr_image_host.bytesToHex( decoded );
     },
+    hexToBase64: hex => btoa( hex.match( /\w{2}/g ).map( a => String.fromCharCode( parseInt( a, 16 ) ) ).join( "" ) ),
     encodeBase64: file => {
         return new Promise( function( resolve, reject ) {
             var imgReader = new FileReader();
-            imgReader.onloadend = function() {
-                resolve( imgReader.result.toString() );
+            imgReader.onloadend = async event => {
+                var uint = new Uint8Array( event.target.result );
+                var hex = nostr_image_host.bytesToHex( uint );
+                var base64 = nostr_image_host.hexToBase64( hex );
+                resolve( base64 );
             }
-            imgReader.readAsDataURL( file );
+            imgReader.readAsArrayBuffer(file);
         });
     },
     waitSomeSeconds: num => {
