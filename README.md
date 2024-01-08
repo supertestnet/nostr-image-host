@@ -96,7 +96,7 @@ If I was running a nostr relay, I would consider it spam and I would block it, u
 
 # How come the image identifier doesn't have a file extension?
 
-Because it isn't a file. It's a nostr event id + a hex encoded nostr relay uri, all re-encoded as a bech32 string with the "nimg" prefix for "nostr image." You can't put the nimg string directly in the "src" tag of an html image, you have to first "assemble" the image by piecing it together from the various events it's been chunked into. It will come to you in base64 format, then you just pass that base64 string into your src tag. There is some sample code for this in nostr_image_host.js -- see the function `load_file`. An example of how to use it in an html page is provided in index.html.
+Because it isn't a file. It's a nostr event id + a nostr relay uri, all encoded as a bech32 string with the "nimg" prefix for "nostr image." You can't put the nimg string directly in the "src" tag of an html image, you have to first "assemble" the image by piecing it together from the various events it's been chunked into. It will come to you in base64 format, then you just pass that base64 string into your src tag. There is some sample code for this in nostr_image_host.js -- see the function `load_file`. An example of how to use it in an html page is provided in index.html.
 
 # What are the next steps?
 
