@@ -27,7 +27,8 @@ There is no nodejs version yet because I don't know how npm works, but it's just
 Next, use these two commands:
 
 ```javascript
-var image_id = await nostr_image_host.uploadToNostr( image_file, $( '.upload_relay' ).value );
+var relay = "wss://relay.damus.io";
+var image_id = await nostr_image_host.uploadToNostr( image_file, relay );
 var base64 = await nostr_image_host.downloadFromNostr( image_id );
 ```
 
