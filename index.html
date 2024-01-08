@@ -185,9 +185,7 @@
         <div class="view_form">
             <p>Enter nostr relay (find some <a href="https://nostr.watch/" target="_blank">here</a>)</p>
             <p><input class="upload_relay"></p>
-            <form>
-                <p><input class="upload_form" type="file" onchange="if ( this.files[ 0 ].size < 266240 ) {upload_data.push( this.files[ 0 ] );} else {alert( 'File too large, make sure it is less than 260 kilobytes' ); this.value = null;}" /></p>
-            </form>
+            <p><input class="upload_form" type="file" onchange="if ( this.files[ 0 ].size < 266240 ) {upload_data.push( this.files[ 0 ] );} else {alert( 'File too large, make sure it is less than 260 kilobytes' ); this.value = null;}" /></p>
             <p><button class="submit_upload_form">Submit</button></p>
         </div>
         <h2>View an image</h2>
