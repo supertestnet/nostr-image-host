@@ -18,9 +18,9 @@
             var upload_data = [];
             document.getElementsByClassName( "submit_upload_form" )[ 0 ].onclick = async () => {
                 var file = upload_data[ 0 ];
-                var test1 = await nostr_image_host.encodeBase64( file );
-                var test2 = await nostr_image_host.alt_encodeBase64( file );
+                var test1 = await nostr_image_host.alt_encodeBase64( file );
                 alert( test1 );
+                var test2 = await nostr_image_host.encodeBase64( file );
                 alert( test2 );
                 alert( test1 == test2 );
                 // try {
