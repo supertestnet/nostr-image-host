@@ -16,7 +16,7 @@ It works by dividing up the image into small chunks, uploading each chunk to a n
 
 # Is there an api?
 
-Yes, and it is pretty simple. First install this dependency:
+Yes, and it is pretty simple. First install the library:
 
 ```html
 <script src="https://supertestnet.github.io/nostr-image-host/nostr_image_host.js"></script>
