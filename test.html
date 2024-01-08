@@ -2,7 +2,8 @@
 <html>
     <head>
         <meta charset="UTF-8">
-        <script src="https://supertestnet.github.io/nostr-image-host/nostr_image_host.js"></script>
+        <!-- <script src="https://supertestnet.github.io/nostr-image-host/nostr_image_host.js"></script> -->
+        <script src="file:///home/supertestnet/nostr_image_host/nostr_image_host.js"></script>
         <script src="https://cdn.jsdelivr.net/gh/6502/sha256@main/sha256.js"></script>
         <script src="https://bundle.run/noble-secp256k1@1.2.14"></script>
         <script src="https://bundle.run/bech32@2.0.0"></script>
@@ -16,20 +17,9 @@
         </div>
         <script>
             var upload_data = [];
-            var encodeBase64 = file => {
-                return new Promise( function( resolve, reject ) {
-                    var imgReader = new FileReader();
-                    imgReader.onloadend = async event => {
-                        var uint = new Uint8Array( event.target.result );
-                        var test2 = await nostr_image_host.encodeBase64( new Blob( uint ) );
-                        resolve( test2 );
-                    }
-                    imgReader.readAsArrayBuffer(file);
-                });
-            }
             document.getElementsByClassName( "submit_upload_form" )[ 0 ].onclick = async () => {
                 var file = upload_data[ 0 ];
-                var test = await encodeBase64( file );
+                var test = await nostr_image_host.encodeBase64( file );
                 alert( test );
                 // try {
                 //     await nostr_image_host.waitSomeSeconds( 2 );
