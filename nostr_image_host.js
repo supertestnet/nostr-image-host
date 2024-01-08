@@ -15,7 +15,7 @@ var nostr_image_host = {
     },
     hexToBech32: ( prefix, hex ) => {
         var words = bech32.bech32m.toWords( nostr_image_host.hexToBytes( hex ) );
-        return bech32.bech32m.encode( prefix, words );
+        return bech32.bech32m.encode( prefix, words, 10000 );
     },
     bech32ToHex: bech32string => {
         var decoded = bech32.bech32m.fromWords( bech32.bech32m.decode( bech32string, 10000 ).words );
