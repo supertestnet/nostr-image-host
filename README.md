@@ -38,7 +38,7 @@ As their names imply, one of them uploads an image file to nostr and returns an 
 <img class="my_image">
 <script>
     var base64 = await nostr_image_host.downloadFromNostr( image_id );
-    $( '.my_image' ).src = base64;
+    document.getElementsByClassName( 'my_image' )[ 0 ].src = base64;
 </script>
 ```
 
@@ -53,7 +53,7 @@ To pass an image file to the `uploadToNostr()` function, I usually use an html f
     async function upload( image_file ) {
         if ( image_file.size >= 266240 ) {
             alert( 'File too large, make sure it is less than 260 kilobytes' );
-            $( '.upload_form' ).value = null;
+            document.getElementsByClassName( 'upload_form' )[ 0 ].value = null;
             return;
         }
         var image_id = await nostr_image_host.uploadToNostr( image_file, relay );
