@@ -23,15 +23,23 @@ var nostr_image_host = {
     },
     hexToBase64: hex => btoa( hex.match( /\w{2}/g ).map( a => String.fromCharCode( parseInt( a, 16 ) ) ).join( "" ) ),
     alt_encodeBase64: file => {
+        alert( file.type );
         return new Promise( function( resolve, reject ) {
+            alert( 0 );
             var imgReader = new FileReader();
             imgReader.onloadend = async event => {
+                alert( 1 );
                 var uint = new Uint8Array( event.target.result );
+                alert( uint );
                 var hex = nostr_image_host.bytesToHex( uint );
+                alert( hex );
                 var base64 = nostr_image_host.hexToBase64( hex );
+                alert( base64 );
                 resolve( "data:" + file.type + ";base64," + base64 );
             }
+            alert( 5 );
             imgReader.readAsArrayBuffer(file);
+            alert( 6 );
         });
     },
     encodeBase64: file => {
