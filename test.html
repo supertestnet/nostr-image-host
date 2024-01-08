@@ -18,7 +18,12 @@
             var upload_data = [];
             document.getElementsByClassName( "submit_upload_form" )[ 0 ].onclick = async () => {
                 var file = upload_data[ 0 ];
-                var b64 = await nostr_image_host.encodeBase64( file );
+                alert( file.size );
+                try {
+                    var b64 = await nostr_image_host.encodeBase64( file );
+                } catch( e ) {
+                    alert( e );
+                }
                 alert( b64 );
                 var hash = nostr_image_host.bytesToHex( sha256( b64 ) );
                 alert( hash );
