@@ -32,7 +32,7 @@ var image_id = await nostr_image_host.uploadToNostr( image_file, relay );
 var base64 = await nostr_image_host.downloadFromNostr( image_id );
 ```
 
-As their names imply, one of them uploads an image file to nostr and returns an image id (image ids look like this: nimg1ekwfkrf8xpctck6k3gycf48sf8zjdzfl6l20fru6smeey8p7w2hhwumn8ghj7mn0wd68yat99e3k7mg2nh06x), the other takes an image id as input and returns a base64 encoded image. I usually follow that up with some javascript that passes the base64 string into the src tag of an html <img> element. Here is an example:
+As their names imply, one of them uploads an image file to nostr and returns an image id (image ids look like this: nimg1ekwfkrf8xpctck6k3gycf48sf8zjdzfl6l20fru6smeey8p7w2hhwumn8ghj7mn0wd68yat99e3k7mg2nh06x), the other takes an image id as input and returns a base64 encoded image. I usually follow that up with some javascript that passes the base64 string into the src tag of an html &lt;img&gt; element. Here is an example:
 
 ```html
 <img class="my_image">
