@@ -1,222 +1,164 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, user-scalable=no">
-        <script src="https://supertestnet.github.io/nostr-image-host/nostr_image_host.js"></script>
-        <script src="https://cdn.jsdelivr.net/gh/6502/sha256@main/sha256.js"></script>
-        <script src="https://bundle.run/noble-secp256k1@1.2.14"></script>
-        <script src="https://bundle.run/bech32@2.0.0"></script>
-        <style>
-            * {
-                box-sizing: border-box;
-                font-size: 1.15rem;
-                font-family: Arial, sans-serif;
+var nostr_image_host = {
+    hexToBytes: hex => Uint8Array.from( hex.match( /.{1,2}/g ).map( ( byte ) => parseInt( byte, 16 ) ) ),
+    bytesToHex: bytes => bytes.reduce( ( str, byte ) => str + byte.toString( 16 ).padStart( 2, "0" ), "" ),
+    textToHex: text => {
+        var encoder = new TextEncoder().encode( text );
+        return [...new Uint8Array(encoder)]
+            .map( x => x.toString( 16 ).padStart( 2, "0" ) )
+            .join( "" );
+    },
+    hexToText: hex => {
+        var bytes = new Uint8Array(Math.ceil(hex.length / 2));
+        for (var i = 0; i < hex.length; i++) bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+        var text = new TextDecoder().decode( bytes );
+        return text;
+    },
+    hexToBech32: ( prefix, hex ) => {
+        var words = bech32.bech32m.toWords( nostr_image_host.hexToBytes( hex ) );
+        return bech32.bech32m.encode( prefix, words );
+    },
+    bech32ToHex: bech32string => {
+        var decoded = bech32.bech32m.fromWords( bech32.bech32m.decode( bech32string, 10000 ).words );
+        return nostr_image_host.bytesToHex( decoded );
+    },
+    encodeBase64: file => {
+        return new Promise( function( resolve, reject ) {
+            var imgReader = new FileReader();
+            imgReader.onloadend = function() {
+                resolve( imgReader.result.toString() );
             }
-            html {
-                max-width: 70ch;
-                padding: 3rem 1rem;
-                margin: auto;
-                line-height: 1.25;
-            }
-            h1 {
-                font-size: 2rem;
-            }
-            h2 {
-                font-size: 1.5rem;
-            }
-            input {
-                line-height: 1.25;
-                width: 100%;
-                height: 1.8rem;
-                font-size: 1.15rem;
-                border: 1px solid grey;
-            }
-            .view_form {
-                border: 1px solid black;
-                padding: 1rem;
-                border-radius: 1rem;
-            }
-            .black-bg {
-                width: 100%;
-                position: fixed;
-                top: 0;
-                left: 0;
-                background-color: black;
-                opacity: .5;
-                width: 100vw;
-                height: 100vh;
-            }
-            .modal {
-                position: fixed;
-                box-sizing: border-box;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%,-50%);
-                width: 90%;
-                max-width: 560px;
-                background-color: white;
-                border-radius: 1rem;
-                padding: 20px;
-                color: black;
-                text-align: center;
-                word-wrap: break-word;
-            }
-            .modal * {
-                color: black;
-            }
-            .hidden {
-                display: none;
-            }
-            .embed_inst {
-                background-color: #999999;
-                color: white;
-                font-family: monospace;
-                padding: 1rem;
-                word-wrap: break-word;
-                border: 1px solid black;
-            }
-            @media screen and (max-width: 600px) {
-            }
-        </style>
-        <script>
-            var $ = document.querySelector.bind( document );
-            var $$ = document.querySelectorAll.bind( document );
-            var url_params = new URLSearchParams( window.location.search );
-            var url_keys = url_params.keys();
-            var $_GET = {}
-            for ( var key of url_keys ) $_GET[ key ] = url_params.get( key );
-        </script>
-        <script>
-            var upload_data = [];
-            var handleWhole = ( whole, image_id ) => {
-                if ( $( '#your_image' ) ) {
-                    $( '#your_image' ).remove();
-                    $( 'img' ).remove();
-                    $( '.embed_inst_label' ).remove();
-                    $( '.embed_inst' ).remove();
+            imgReader.readAsDataURL( file );
+        });
+    },
+    waitSomeSeconds: num => {
+        var num = num.toString() + "000";
+        num = Number( num );
+        return new Promise( resolve => setTimeout( resolve, num ) );
+    },
+    getNote: async item => {
+        async function isNoteSetYet( note_i_seek ) {
+            return new Promise( function( resolve, reject ) {
+                if ( !note_i_seek ) {
+                    setTimeout( async function() {
+                        var msg = await isNoteSetYet( nostr_image_host[ item ] );
+                        resolve( msg );
+                    }, 100 );
+                } else {
+                    resolve( note_i_seek );
                 }
-                var type = whole.substring( 0, whole.indexOf( "base64" ) );
-                if ( type.startsWith( "data:image" ) ) {
-                    var image = document.createElement( "img" );
-                    image.src = whole;
-                    image.style.width = "100%";
-                    var header = document.createElement( "h2" );
-                    header.innerText = "Your image";
-                    header.id = "your_image";
-                    header.className = "your_image";
-                    var embed_label = document.createElement( "h2" );
-                    embed_label.innerText = "Embed this image on your page";
-                    embed_label.className = "embed_inst_label";
-                    var embed_inst = document.createElement( "p" );
-                    console.log( image_id );
-                    image_id = nostr_image_host.hexToBech32( "nimg", image_id );
-                    console.log( image_id );
-                    embed_inst.innerHTML = `&lt;img class="nostr_image_host nostr_image_${image_id}"&gt;
-        &lt;script src="https://supertestnet.github.io/nostr-image-host/nostr_image_host.js"&gt;&lt;/script&gt;
-        &lt;script src="https://cdn.jsdelivr.net/gh/6502/sha256@main/sha256.js"&gt;&lt;/script&gt;
-        &lt;script src="https://bundle.run/noble-secp256k1@1.2.14"&gt;&lt;/script&gt;
-        &lt;script src="https://bundle.run/bech32@2.0.0"&gt;&lt;/script&gt;
-        &lt;script&gt;var nostr_image_loader_${image_id} = async () =&gt; {var b64 = await nostr_image_host.downloadFromNostr( "${image_id}" );document.getElementsByClassName( "nostr_image_${image_id}" )[ 0 ].src = b64;}; nostr_image_loader_${image_id}();&lt;/script&gt;`;
-                    embed_inst.className = "embed_inst";
-                    document.body.append( header );
-                    document.body.append( image );
-                    document.body.append( embed_label );
-                    document.body.append( embed_inst );
-                }
-            }
-            function showModal( content ) {
-                $( ".modal" ).innerHTML = `<div style="position: absolute;right: 1rem;top: 0.5rem;font-size: 2rem; cursor: pointer; color: black;" onclick="modalVanish()">&times;</div>`;
-                $( ".modal" ).innerHTML += `<div style="overflow-y: auto; max-height: 80vh; margin-top: 1.5rem;">${content}</div>`;
-                $( ".black-bg" ).classList.remove( "hidden" );
-                $( ".modal" ).classList.remove( "hidden" );
-            }
-            function modalVanish() {
-                $( ".black-bg" ).classList.add( "hidden" );
-                $( ".modal" ).classList.add( "hidden" );
-            }
-            var do_upload_bar = async ( hash, image_id ) => {
-                var html = `
-                    <div class="progress">
-                        <h2>Progress bar <span id="goal" style="font-size: .8em; font-weight: normal;"></span></h2>
-                        <div class="progressOutline" style="height: 2em; border: 1px solid grey; border-radius: 25px; overflow: hidden;">
-                            <div class="progressBar" style="height: 2em; background-color: #61eb34; width: 0%; transition: width 1s;">
-                            </div>
-                        </div>
-                        <div class="progress_status"></div>
-                    </div>
-                `;
-                if ( nostr_image_host[ `n_${hash}_percent_done_uploading` ] == "100%" ) html = html + `<h2>Your image id</h2><p>${image_id}</p>`;
-                showModal( html );
-                var percent = nostr_image_host[ `n_${hash}_percent_done_uploading` ];
-                $( '.progressBar' ).style.width = percent;
-                await nostr_image_host.waitSomeSeconds( 2 );
-                if ( nostr_image_host[ `n_${hash}_percent_done_uploading` ] != "100%" ) do_upload_bar( hash );
-            }
-            var do_download_bar = async file_id => {
-                var html = `
-                    <div class="progress">
-                        <h2>Progress bar <span id="goal" style="font-size: .8em; font-weight: normal;"></span></h2>
-                        <div class="progressOutline" style="height: 2em; border: 1px solid grey; border-radius: 25px; overflow: hidden;">
-                            <div class="progressBar" style="height: 2em; background-color: #61eb34; width: 0%; transition: width 1s;">
-                            </div>
-                        </div>
-                        <div class="progress_status"></div>
-                    </div>
-                `;
-                showModal( html );
-                await nostr_image_host.waitSomeSeconds( 1 );
-                $( '.progressBar' ).style.width = nostr_image_host[ `n_${file_id.substring( 0, 64 )}_percent_done_downloading` ];
-                await nostr_image_host.waitSomeSeconds( 1 );
-                if ( nostr_image_host[ `n_${file_id.substring( 0, 64 )}_percent_done_downloading` ] != "100%" ) do_download_bar( file_id );
-                else {
-                    $( '.progressBar' ).style.width = nostr_image_host[ `n_${file_id.substring( 0, 64 )}_percent_done_downloading` ];
+            });
+        }
+        async function getTimeoutData() {
+            var note_i_seek = await isNoteSetYet( nostr_image_host[ item ] );
+            return note_i_seek;
+        }
+        var returnable = await getTimeoutData();
+        return returnable;
+    },
+    getSignedEvent: async (event, privateKey) => {
+        var eventData = JSON.stringify([
+            0,                  // Reserved for future use
+            event['pubkey'],        // The sender's public key
+            event['created_at'],    // Unix timestamp
+            event['kind'],      // Message “kind” or type
+            event['tags'],      // Tags identify replies/recipients
+            event['content']        // Your note contents
+        ])
+        event.id  = nostr_image_host.bytesToHex( sha256( eventData ) );
+        event.sig = await nobleSecp256k1.schnorr.sign( event.id, privateKey );
+        return event;
+    },
+    sendNoteAndReturnId: async ( note, part, whole, socket, privKey, pubKey ) => {
+        var event = {
+            "content"    : note,
+            "created_at" : Math.floor( Date.now() / 1000 ),
+            "kind"       : 57009,
+            "tags"       : [ [ "pieces", `${part} of ${whole}` ] ],
+            "pubkey"     : pubKey,
+        }
+        var signedEvent = await nostr_image_host.getSignedEvent( event, privKey );
+        socket.send(JSON.stringify([ "EVENT", signedEvent ]));
+        return signedEvent.id;
+    },
+    uploadToNostr: async ( file, relay ) => {
+        return new Promise( async ( resolve, reject ) => {
+            if ( !relay ) return;
+            if ( !relay.startsWith( "wss://" ) ) relay = "wss://" + relay;
+            var b64 = await nostr_image_host.encodeBase64( file );
+            var hash = nostr_image_host.bytesToHex( sha256( b64 ) );
+            var socket = new WebSocket( relay );
+            socket.addEventListener('open', async function( e ) {
+                var array = b64.match(/.{1,4000}/g);
+                var privKey = nostr_image_host.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() );
+                var pubKey = nobleSecp256k1.getPublicKey( privKey, true ).substring( 2 );
+                nostr_image_host[ `n_${hash}_percent_done_uploading` ] = "0%";
+                var i; for ( i=0; i<array.length; i++ ) {
+                    var note = array[ i ];
+                    var part = i + 1;
+                    var whole = array.length;
+                    var id = await nostr_image_host.sendNoteAndReturnId( note, part, whole, socket, privKey, pubKey );
+                    var percent = Number( ( ( part / whole ) * 100 ).toFixed( 2 ) );
+                    nostr_image_host[ `n_${hash}_percent_done_uploading` ] = percent + "%";
+                    if ( percent == 100 ) resolve( nostr_image_host.hexToBech32( "nimg", id + nostr_image_host.textToHex( relay ) ) );
                     await nostr_image_host.waitSomeSeconds( 2 );
-                    modalVanish();
                 }
-            }
-        </script>
-    </head>
-    <body>
-        <h1>Welcome to nostr image host</h1>
-        <p>On this page you can upload images to nostr relays. It works by dividing up the image into small chunks, uploading each chunk as a note, and then reassembling them piece by piece. I've had no issues uploading images smaller than 20kb to wss://relay.damus.io and wss://nostrue.com.</p>
-        <p>Some nostr relays have stringent rate limits and probably won't work for this. Try small images (fewer chunks) to avoid hitting the rate limit. If you *do* hit the rate limit before your image is done uploading, you won't see an error message or anything helpful, your image just won't load when you try to view it, because one or more chunks are missing. Try again with a smaller image and maybe a different relay. A list of nostr relays is <a href="https://nostr.watch/" target="_blank">here</a>.</p>
-        <h2>Upload an image</h2>
-        <div class="view_form">
-            <p>Enter nostr relay (find some <a href="https://nostr.watch/" target="_blank">here</a>)</p>
-            <p><input class="upload_relay"></p>
-            <form>
-                <p><input class="upload_form" type="file" onchange="if ( this.files[ 0 ].size < 266240 ) {upload_data.push( this.files[ 0 ] );} else {alert( 'File too large, make sure it is less than 260 kilobytes' ); this.value = null;}" /></p>
-            </form>
-            <p><button class="submit_upload_form">Submit</button></p>
-        </div>
-        <h2>View an image</h2>
-        <div class="view_form">
-            <p>Enter image id</p>
-            <p><input class="image_id"></p>
-            <p><button class="submit_view_form">Submit</button></p>
-        </div>
-        <script>
-            $( '.upload_form' ).value = "";
-            $( '.submit_upload_form' ).onclick = async () => {
-                var file = upload_data[ 0 ];
-                var b64 = await nostr_image_host.encodeBase64( file );
-                var hash = nostr_image_host.bytesToHex( sha256( b64 ) );
-                upload_data = [];
-                do_upload_bar( hash );
-                var id = await nostr_image_host.uploadToNostr( file, $( '.upload_relay' ).value );
-                do_upload_bar( hash, id );
-            }
-            $( '.submit_view_form' ).onclick = async () => {
-                var image_id = $( '.image_id' ).value;
-                image_id_hex = nostr_image_host.bech32ToHex( image_id );
-                do_download_bar( image_id_hex );
-                var b64 = await nostr_image_host.downloadFromNostr( image_id );
-                handleWhole( b64, image_id_hex );
-                location.hash = "#your_image";
-            }
-        </script>
-        <div class="black-bg hidden" onclick="modalVanish();"></div>
-        <div class="modal hidden"></div>
-    </body>
-</html>
+                socket.close();
+            });
+        });
+    },
+    load_file: ( file_id, relay ) => {
+        return new Promise( function( resolve, reject ) {
+            var pieces = [];
+            var socket = new WebSocket( relay );
+            nostr_image_host[ `n_${file_id}_percent_done_downloading` ] = `0%`;
+            socket.addEventListener('message', async function( message ) {
+                var [ type, subId, event ] = JSON.parse( message.data );
+                var { kind, content, tags } = event || {}
+                if (!event || event === true) return;
+                if ( subId.startsWith( "0000" ) ) {
+                    tags.forEach( async item => {
+                        if ( item[ 0 ] == "pieces" ) {
+                            var parts = item[ 1 ].split( " of " );
+                            pieces[ Number( parts[ 0 ] ) - 1 ] = content;
+                            if ( parts[ 0 ] == "1" ) {
+                                if ( pieces.length == Number( parts[ 1 ] ) ) {
+                                    var whole = pieces.join( "" );
+                                    nostr_image_host[ `n_${file_id}_percent_done_downloading` ] = `100%`;
+                                    nostr_image_host[ `nostr_image_${event.id}` ] = whole;
+                                    socket.close();
+                                    resolve( event.id );
+                                }
+                            } else {
+                                var num_of_loaded_parts = 0;
+                                pieces.forEach( item => {if ( item ) num_of_loaded_parts = num_of_loaded_parts + 1;} );
+                                var percent = Number( ( ( num_of_loaded_parts / Number( parts[ 1 ] ) ) * 100 ).toFixed( 2 ) );
+                                nostr_image_host[ `n_${file_id}_percent_done_downloading` ] = `${percent}%`;
+                            }
+                        }
+                    });
+                } else {
+                    var subId   = "0000" + nostr_image_host.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ).substring( 4, 16 );
+                    var filter  = { "authors": [ event.pubkey ], kinds: [ 57009 ] }
+                    var subscription = [ "REQ", subId, filter ];
+                    socket.send(JSON.stringify( subscription ));
+                }
+            });
+            socket.addEventListener('open', async function( e ) {
+                var subId   = nostr_image_host.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ).substring( 0, 16 );
+                var filter  = { "ids": [ file_id ], kinds: [ 57009 ] }
+                var subscription = [ "REQ", subId, filter ];
+                socket.send(JSON.stringify( subscription ));
+            });
+        });
+    },
+    downloadFromNostr: async image_id => {
+        image_id = nostr_image_host.bech32ToHex( image_id );
+        var relay_hex = image_id.substring( 64 );
+        var relay = nostr_image_host.hexToText( relay_hex );
+        var file_id = image_id.substring( 0, 64 );
+        var thing_i_need = await nostr_image_host.load_file( file_id, relay );
+        var image_b64 = await nostr_image_host.getNote( `nostr_image_${thing_i_need}` );
+        delete nostr_image_host[ `nostr_image_${thing_i_need}` ];
+        return image_b64;
+    }
+}
