@@ -15,14 +15,17 @@
             <p><button class="submit_upload_form">Submit</button></p>
         </div>
         <script>
+            alert( "version 1" );
             var upload_data = [];
             document.getElementsByClassName( "submit_upload_form" )[ 0 ].onclick = async () => {
                 var file = upload_data[ 0 ];
                 alert( file.size );
                 try {
-                    alert( 0 );
+                    alert( JSON.stringify( Object.keys( nostr_image_host ) ) );
+                    var test = await nostr_image_host.encodeBase64( new Blob( [0,0,0,0] ) );
+                    alert( test );
                     var b64 = await nostr_image_host.encodeBase64( file );
-                    alert( 1 );
+                    alert( 1, b64 );
                 } catch( e ) {
                     alert( 2 );
                     alert( e );
