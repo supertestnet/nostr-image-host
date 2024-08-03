@@ -110,6 +110,10 @@ var nostr_image_host = {
             var b64 = await nostr_image_host.encodeBase64( file );
             var hash = nostr_image_host.bytesToHex( sha256( b64 ) );
             var socket = new WebSocket( relay );
+            var failure = false;
+            socket.addEventListener('message', async function( e ) {
+                if ( !JSON.parse( e.data )[ 2 ] ) failure = true;
+            });
             socket.addEventListener('open', async function( e ) {
                 var array = b64.match(/.{1,4000}/g);
                 var privKey = nostr_image_host.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() );
@@ -120,6 +124,10 @@ var nostr_image_host = {
                     var part = i + 1;
                     var whole = array.length;
                     var id = await nostr_image_host.sendNoteAndReturnId( note, part, whole, socket, privKey, pubKey );
+                    if ( failure ) {
+                        resolve ( "upload failed" );
+                        break;
+                    }
                     var percent = Number( ( ( part / whole ) * 100 ).toFixed( 2 ) );
                     nostr_image_host[ `n_${hash}_percent_done_uploading` ] = percent + "%";
                     if ( percent == 100 ) resolve( nostr_image_host.hexToBech32( "nimg", id + nostr_image_host.textToHex( relay ) ) );
